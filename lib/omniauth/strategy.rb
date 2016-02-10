@@ -363,7 +363,12 @@ module OmniAuth
     end
 
     def path_prefix
-      options[:path_prefix] || OmniAuth.config.path_prefix
+      path_prefix = options[:path_prefix] || OmniAuth.config.path_prefix
+      if path_prefix.respond_to?(:call)
+        path_prefix.call(env)
+      else
+        path_prefix
+      end
     end
 
     def custom_path(kind)

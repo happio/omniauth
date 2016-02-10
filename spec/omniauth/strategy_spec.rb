@@ -463,6 +463,39 @@ describe OmniAuth::Strategy do
       end
     end
 
+    context 'dynamic prefix' do
+      before do
+        @options = {:path_prefix => lambda { |_env| '/wowzers' } }
+      end
+
+      it 'uses a dynamic prefix for request' do
+        expect { strategy.call(make_env('/wowzers/test')) }.to raise_error('Request Phase')
+      end
+
+      it 'uses a dynamic prefix for callback' do
+        expect { strategy.call(make_env('/wowzers/test/callback')) }.to raise_error('Callback Phase')
+      end
+
+      context 'callback_url' do
+        it 'uses a dynamic prefix' do
+          expect(strategy).to receive(:full_host).and_return('http://example.com')
+
+          expect { strategy.call(make_env('/wowzers/test')) }.to raise_error('Request Phase')
+
+          expect(strategy.callback_url).to eq('http://example.com/wowzers/test/callback')
+        end
+
+        it 'preserves the query parameters' do
+          allow(strategy).to receive(:full_host).and_return('http://example.com')
+          begin
+            strategy.call(make_env('/auth/test', 'QUERY_STRING' => 'id=5'))
+          rescue RuntimeError
+          end
+          expect(strategy.callback_url).to eq('http://example.com/wowzers/test/callback?id=5')
+        end
+      end
+    end
+
     context 'custom prefix' do
       before do
         @options = {:path_prefix => '/wowzers'}
